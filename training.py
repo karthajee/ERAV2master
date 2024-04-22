@@ -10,6 +10,31 @@ import copy
 
 class Trainer:
 
+    """
+    Trainer class for handling the training and testing of neural network models.
+
+    Attributes:
+        model (nn.Module): The neural network model to be trained.
+        device (torch.device): The device (CPU or GPU) on which the model is trained.
+        train_loader (DataLoader): DataLoader for the training dataset.
+        test_loader (DataLoader): DataLoader for the testing dataset.
+        epochs (int): Number of epochs to train the model.
+        optimizer (optim.Optimizer): Optimizer used for model training.
+        scheduler (optim.lr_scheduler): Learning rate scheduler.
+        train_losses (list): List to store the loss of the model on the training data for each batch.
+        test_losses (list): List to store the loss of the model on the testing data after each epoch.
+        train_acc (list): List to store the accuracy of the model on the training data for each batch.
+        test_acc (list): List to store the accuracy of the model on the testing data after each epoch.
+        lrs (list): List to store the learning rate for each batch.
+
+    Methods:
+        train(): Trains the model for one epoch.
+        test(): Evaluates the model's performance on the test dataset.
+        exec_train_test_loop(save_flag): Executes the training and testing loop for the specified number of epochs.
+        get_lr(): Returns the current learning rate.
+        visualize_loss_acc(): Plots the training and testing losses and accuracies.
+    """
+
     def __init__(self, model, device, train_loader, test_loader, opt = 'adam', epochs=24, finder_start_lr = 1e-5, 
                  finder_end_lr=10, finder_num_iter=200, scheduler_div_factor = 10, scheduler_pct_start=0.2):
         """
@@ -44,6 +69,19 @@ class Trainer:
         self.lrs = []
 
     def get_lr_max(self, start_lr, end_lr, num_iter):
+
+        """
+        Determines the optimal maximum learning rate using the learning rate finder technique.
+
+        Parameters:
+            start_lr (float): Starting learning rate for the learning rate finder.
+            end_lr (float): Ending learning rate for the learning rate finder.
+            num_iter (int): Number of iterations over which the learning rate finder operates.
+
+        Returns:
+            float: The optimal maximum learning rate found by the learning rate finder.        
+        """
+
         model_copy = copy.deepcopy(self.model)
         criterion = nn.CrossEntropyLoss()        
         optimizer_copy = copy.deepcopy(self.optimizer)
@@ -55,6 +93,10 @@ class Trainer:
         return lr_max
     
     def train(self):
+
+        """
+        Trains the model for one epoch through all batches of the training dataset.
+        """
         
         self.model.train()
         pbar = tqdm(self.train_loader)
@@ -80,6 +122,10 @@ class Trainer:
             self.train_acc.append(100*correct/processed)
 
     def test(self):
+
+        """
+        Evaluates the model's performance on the test dataset after training.
+        """
         
         self.model.eval()
         test_loss = 0
@@ -101,6 +147,10 @@ class Trainer:
 
     def exec_train_test_loop(self, save_flag=True):
 
+        """
+        Runs the train-test loop for a certain number of epochs
+        """
+
         for epoch in range(self.epochs):
             print(f'[INFO] Epoch #{epoch + 1}')
             self.train()
@@ -109,8 +159,9 @@ class Trainer:
             self.model.save()
 
     def get_lr(self):
+
         """"
-        for tracking how your learning rate is changing throughout training
+        For tracking how your learning rate is changing throughout training
         """
         for param_group in self.optimizer.param_groups:
             return param_group['lr']
@@ -120,8 +171,9 @@ class Trainer:
         """
         Visualizes training and testing losses and accuracies from the training instance.
 
-        Function plots five charts: training loss, testing loss, training accuracy and testing accuracy, 
-        and the absolute difference between training and testing accuracies (normalized by 100) across epochs.
+        Function plots six charts: training loss, testing loss, training accuracy and testing accuracy, 
+        and the absolute difference between training and testing accuracies (normalized by 100), learning rates
+        across epochs.
         """
 
         train_test_diff = [np.abs(tr-te)/100 for tr, te in zip(self.train_acc, self.test_acc)]
