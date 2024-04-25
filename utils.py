@@ -10,6 +10,14 @@ import numpy as np
 from collections import defaultdict
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
+import multiprocessing
+import torch.nn.functional as F
+from PIL import Image
+
+def get_avail_cpu_cores():
+    num_cores_avail = multiprocessing.cpu_count()-1
+    return num_cores_avail
+
 
 def get_device():
     
@@ -137,3 +145,13 @@ def display_grad_cam_batch(model, target_layers, images_dict, device, classes,
         ax.axis('off')
     
     fig.show()
+
+def export_cifar_image(img_numpy, dir='.', filename='output.png'):
+    
+    img_numpy = img_numpy.transpose(1, 2, 0)
+    if (img_numpy < 0).any():
+        img_numpy = get_inv_transform_cifar(img_numpy)
+    img_int = np.uint8(255 * img_numpy)
+    img = Image.fromarray(img_int)
+    filepath = dir + filename
+    img.save(filepath)
