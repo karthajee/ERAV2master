@@ -76,6 +76,16 @@ def get_cifar10_loaders(train_transforms, test_transforms, root = './data', shuf
 
 def get_inv_transform_cifar(img):
 
+    """
+    Applies an inverse transformation to a normalized CIFAR-10 image, returning it to its original form.
+
+    Parameters:
+        img (PIL.Image or numpy.ndarray): The image to be transformed back to its original state.
+
+    Returns:
+        numpy.ndarray: The de-normalized image.
+    """
+
     means = (0.49139968, 0.48215827 ,0.44653124)
     stds = (0.24703233, 0.24348505, 0.26158768)
     transform = A.Normalize(mean=[-m/s for m, s in zip(means, stds)], 
@@ -85,6 +95,22 @@ def get_inv_transform_cifar(img):
     return transform(image=np.array(img))['image']
 
 def get_misclassified_images(model, dataloader, classes, device, plot_flag=True, nrows=2):
+
+    """
+    Identifies and optionally plots misclassified images from a dataloader using a trained model.
+
+    Parameters:
+        model (torch.nn.Module): The trained model to evaluate.
+        dataloader (torch.utils.data.DataLoader): DataLoader containing the dataset to evaluate.
+        classes (list): List of class names corresponding to dataset labels.
+        device (torch.device): The device on which the model is located (CPU or GPU).
+        plot_flag (bool, optional): If True, misclassified images are plotted. Defaults to True.
+        nrows (int, optional): Number of rows in the plot of misclassified images. Defaults to 2.
+
+    Returns:
+        dict: A dictionary containing arrays of misclassified image data, true labels, predicted labels, and prediction probabilities.
+    """
+
     model.eval()
     misclassified = defaultdict(list)
     with torch.no_grad():
@@ -117,6 +143,20 @@ def get_misclassified_images(model, dataloader, classes, device, plot_flag=True,
 def display_grad_cam_batch(model, target_layers, images_dict, device, classes, 
                            gradcam_transparency=0.5, targets=None):
 
+    """
+    Displays a batch of images with Grad-CAM overlays to indicate areas of the image that influenced the model's predictions.
+
+    Parameters:
+        model (torch.nn.Module): The trained model to visualize the Grad-CAM for.
+        target_layers (list of torch.nn.modules): List of layers for which to compute the Grad-CAM.
+        images_dict (dict): Dictionary containing arrays of image data and associated labels and prediction info.
+                            Keys should include 'img_numpy', 'y_true', 'y_pred', and 'prob'.
+        device (torch.device): The device (CPU or GPU) where computations will be performed.
+        classes (list): List of class names corresponding to dataset labels.
+        gradcam_transparency (float, optional): Transparency level of the Grad-CAM overlay on the original image. Defaults to 0.5.
+        targets (list of int, optional): Specific classes for which to generate Grad-CAM. If None, the predicted class is used. Defaults to None.
+    """
+
     cam = GradCAM(model, target_layers)
     input_tensor = torch.tensor(np.array(images_dict['img_numpy']), device=device)
     grayscale_cam = cam(input_tensor, targets=targets)        
@@ -146,7 +186,16 @@ def display_grad_cam_batch(model, target_layers, images_dict, device, classes,
     
     fig.show()
 
-def export_cifar_image(img_numpy, dir='.', filename='output.png'):
+def export_cifar_image(img_numpy, dir='./', filename='output.png'):
+    
+    """
+    Saves a CIFAR-10 image from a numpy array to a file, converting it back to its original visual form if necessary.
+
+    Parameters:
+        img_numpy (numpy.ndarray): The image data as a numpy array, expected in CHW format (channels, height, width).
+        dir (str, optional): Directory where the image file will be saved. Defaults to the current directory.
+        filename (str, optional): The name of the file to save the image as. Defaults to 'output.png'.
+    """
     
     img_numpy = img_numpy.transpose(1, 2, 0)
     if (img_numpy < 0).any():
